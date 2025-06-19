@@ -22,6 +22,7 @@ from __future__ import print_function
 import sys
 import time
 import json
+import os
 
 # Create a system bus object.
 import dbus
@@ -241,6 +242,34 @@ class RetrieveExportStats():
                                  self.dbus_exportstats_name)
         return ExportDetails(stats_op(export_id))
 
+    def throughput_stats(self, testfile):
+        throughput_stats = self.run_throughput_test(testfile)
+        return ThroughputStats(throughput_stats)
+
+    def run_throughput_test(self, testfile):
+        block_size = 1024 * 1024
+        file_size_mb = 1024
+        if os.path.exists(testfile):
+            os.remove(testfile)
+        os.mknod(testfile)
+
+        start = time.time()
+        with open(testfile, 'wb') as f:
+            data = os.urandom(block_size)
+            for _ in range(file_size_mb):
+                f.write(data)
+        write_time = time.time() - start
+
+        start = time.time()
+        with open(testfile, 'rb') as f:
+            while f.read(block_size):
+                pass
+        read_time = time.time() - start
+
+        write_throughput = file_size_mb/write_time
+        read_throughput = file_size_mb/read_time
+        os.remove(testfile)
+        return {'write': write_throughput, 'read': read_throughput}
 
 class RetrieveClientStats():
     def __init__(self):
@@ -272,6 +301,18 @@ class RetrieveClientStats():
                           self.dbus_clientstats_name)
         return ClientAllops(stats_op(ip))
 
+
+class ThroughputStats(Report):
+    def __init__(self, stats):
+        super().__init__(stats)
+        self.stats = stats
+
+    def fill_report(self, report):
+        report['throughput'].append(self.stats)
+        return report['throughput']
+
+    def __str__(self):
+        return ("\nWRITE Throughput: " + str(round(self.stats['write'], 2)) + " MB/s\nREAD Throughput: " + str(round(self.stats['read'], 2)) + " MB/s")
 
 class ClientStats(Report):
     def __init__(self, stats):

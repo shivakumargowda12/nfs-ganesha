@@ -48,7 +48,7 @@ To display stat counters use:
               iomon [export id] | export | total [export id] | fast | pnfs [export id] |
               fsal <fsal name> | v3_full | v4_full | auth |
               client_io_ops <ip address> | export_details <export id> |
-              client_all_ops <ip address>]
+              client_all_ops <ip address>] throughput
 
 To display stat counters in json format use:
   {progname} json <command>
@@ -89,7 +89,7 @@ commands = (
     'help', 'list_clients', 'deleg', 'global', 'inode', 'iov3', 'iov4',
     'iov41', 'iov42', 'iomon', 'export', 'total', 'fast', 'pnfs', 'fsal',
     'reset', 'enable', 'disable', 'status', 'v3_full', 'v4_full', 'auth',
-    'client_io_ops', 'export_details', 'client_all_ops', 'json'
+    'client_io_ops', 'export_details', 'client_all_ops', 'json', 'throughput'
 )
 
 if command not in commands:
@@ -111,6 +111,11 @@ elif command == 'export_details':
     else:
         print("\nError: Argument '%s' must be numeric." % opts[0])
         print_usage_exit(1)
+elif command == 'throughput':
+    if not len(opts) == 1:
+        print("\nError: Option '%s' must be followed by a testfile path." % command)
+        print_usage_exit(1)
+    command_arg = opts[0]
 # optionally accepts an export id
 elif command in ('iov3', 'iov4', 'iov41', 'iov42', 'iomon', 'total', 'pnfs'):
     if (len(opts) == 0):
@@ -174,6 +179,8 @@ try:
         result = exp_interface.total_stats(command_arg)
     elif command == "export_details":
         result = exp_interface.export_details_stats(command_arg)
+    elif command == "throughput":
+        result = exp_interface.throughput_stats(command_arg)
     elif command == "pnfs":
         result = exp_interface.pnfs_stats(command_arg)
     elif command == "reset":
